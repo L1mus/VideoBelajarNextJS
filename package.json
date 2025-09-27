@@ -1,0 +1,33 @@
+{
+  "name": "elearning",
+  "version": "0.1.0",
+  "private": true,
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.10.0",
+    "@prisma/client": "^6.16.2",
+    "@tailwindcss/postcss": "^4.1.13",
+    "bcrypt": "^6.0.0",
+    "next": "^14.2.33",
+    "next-auth": "^4.24.11",
+    "postcss": "^8.5.6",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "tailwindcss": "^4.1.13"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@types/bcrypt": "^6.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "14.2.3",
+    "prisma": "^6.16.2"
+  }
+}

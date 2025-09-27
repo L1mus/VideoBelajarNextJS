@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Mode  */
+    --background-hsl: 216, 18.07%, 16.27%;
+    --foreground-hsl: 0 0% 100%;
+    --foreground-secondary-hsl: 220, 2.48%, 76.27%;
+    --foreground-disabled-hsl: 225, 2.08%, 62.35%;
+  }
+}
+
+:root {
+  /* Light Mode */
+  --background-hsl: 50, 100%, 97%;
+  --foreground-hsl: 220.91, 27.5%, 15.69%;
+  --foreground-secondary-hsl: 0, 0%, 20%;
+  --foreground-disabled-hsl: 265, 10.17%, 23.14%;
+}
+@theme inline {
+  --color-background: hsl(var(--background-hsl));
+  --color-foreground: hsl(var(--foreground-secondary-hsl));
+  --color-primary-foreground: hsl(var(--foreground-hsl));
+  --font-dmsans: var(--font-dmsans);
+  --font-poppins: var(--font-poppins);
+
+  /* Palet Warna Semantik (otomatis light/dark mode) */
+  --color-border: hsl(265, 10.17%, 23.14%);
+  --color-disabled: hsl(var(--foreground-disabled-hsl));
+
+  /* greyscale palette */
+  --color-gray-50: hsl(210 40% 98%);
+  --color-gray-100: hsl(210 40% 96.1%);
+  --color-gray-200: hsl(214.3 31.8% 91.4%);
+  --color-gray-300: hsl(215.4 16.3% 83.9%);
+  --color-gray-400: hsl(215.3 19.3% 65.1%);
+  --color-gray-500: hsl(215.8 15.3% 50.2%);
+  --color-gray-600: hsl(216.3 22.8% 34.5%);
+  --color-gray-700: hsl(217.1 32.6% 25.1%);
+  --color-gray-800: hsl(218.3 39.4% 18.2%);
+  --color-gray-900: hsl(220 45% 12%);
+
+  /* main palette dengan skala numerik lengkap */
+  --color-primary-100: hsl(104.57, 85.37%, 91.96%);
+  --color-primary-200: hsl(109.71, 87.5%, 84.31%);
+  --color-primary-300: hsl(114.65, 77.1%, 74.31%);
+  --color-primary-400: hsl(120, 67.23%, 65.29%);
+  --color-primary-default: hsl(125.79, 60.17%, 52.75%);
+  --color-secondary-100: hsl(48, 100%, 92.16%);
+  --color-secondary-200: hsl(45.57, 100%, 84.51%);
+  --color-secondary-300: hsl(43.87, 100%, 76.67%);
+  --color-secondary-400: hsl(41.76, 100%, 70.98%);
+  --color-secondary-default: hsl(39.9, 100%, 61.37%);
+  --color-tertiary-100: hsl(30, 95.65%, 90.98%);
+  --color-tertiary-200: hsl(24.94, 97.8%, 82.16%);
+  --color-tertiary-300: hsl(20.45, 95.65%, 72.94%);
+  --color-tertiary-400: hsl(16.2, 93.14%, 65.69%);
+  --color-tertiary-default: hsl(11.5, 92.24%, 54.51%);
+
+  /* info palette */
+  --color-info-pressed: hsl(213.42, 95.18%, 32.55%);
+  --color-info-hover: hsl(213.42, 95.18%, 32.55%);
+  --color-info-default: hsl(207.1, 92.34%, 46.08%);
+  --color-info-background: hsl(195.79, 90.48%, 95.88%);
+  --color-info-gradient: linear-gradient(
+    to right,
+    hsl(220.42, 100%, 71.76%),
+    hsl(220.34, 100%, 45.49%)
+  );
+
+  /* success palette */
+  --color-success-pressed: hsl(163.77, 68.54%, 34.9%);
+  --color-success-hover: hsl(157.99, 63.47%, 42.94%);
+  --color-success-default: hsl(151.76, 62.45%, 51.96%);
+  --color-success-background: hsl(118, 88.24%, 93.33%);
+  --color-success-gradient: linear-gradient(
+    to right,
+    hsl(141.86, 100%, 72.55%),
+    hsl(141.96, 100%, 38.04%)
+  );
+
+  /* warning palette */
+  --color-warning-pressed: hsl(53.93, 86.6%, 38.04%);
+  --color-warning-hover: hsl(54.52, 83.83%, 46.08%);
+  --color-warning-default: hsl(54.93, 97.4%, 54.71%);
+  --color-warning-background: hsl(55.2, 89.29%, 89.02%);
+  --color-warning-gradient: linear-gradient(
+    to right,
+    hsl(351.28, 100%, 77.06%),
+    hsl(0, 100%, 60%)
+  );
+
+  /* error palette */
+  --color-error-pressed: hsl(5.19, 79.41%, 40%);
+  --color-error-hover: hsl(9.57, 75.2%, 49.02%);
+  --color-error-default: hsl(13.87, 100%, 58.43%);
+  --color-error-background: hsl(25.12, 87.76%, 90.39%);
+  --color-error-gradient: linear-gradient(
+    to right,
+    hsl(195 100% 50%),
+    hsl(207 100% 40%)
+  );
+
+  --font-size-h1: 3rem;
+  --font-size-h2: 2.5rem;
+  --font-size-h3: 2rem;
+  --font-size-h4: 1.5rem;
+  --font-size-h5: 1.25rem;
+  --font-size-h6: 1.125rem;
+  --font-size-body-lg: 1.125rem;
+  --font-size-body-md: 1rem;
+  --font-size-body-sm: 0.875rem;
+
+  --letter-spacing-normal: 0.0125rem;
+  --letter-spacing-heading: 0;
+  --line-height-normal: 1.4;
+  --line-height-heading: 1.1;
+  --line-height-heading4: 1.2;
+  --container-7xl: 1200px;
+  --breakpoint-xl: 1200px;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  * {
+    margin: 0;
+  }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-dmsans);
+    letter-spacing: var(--letter-spacing-normal);
+    line-height: var(--line-height-normal);
+    -webkit-font-smoothing: antialiased;
+  }
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: var(--letter-spacing-heading);
+    line-height: var(--line-height-heading);
+    font-family: var(--font-poppins);
+    font-weight: 900;
+  }
+  h4,
+  h5,
+  h6 {
+    letter-spacing: var(--letter-spacing-heading);
+    line-height: var(--line-height-heading4);
+    font-family: var(--font-poppins);
+    font-weight: 900;
+  }
+
+  .overflow-x-auto::-webkit-scrollbar {
+    display: none;
+  }
+
+  .overflow-x-auto {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

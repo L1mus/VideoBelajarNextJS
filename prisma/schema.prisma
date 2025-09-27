@@ -1,0 +1,297 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===================================
+// == BAGIAN INTI APLIKASI ==
+// ===================================
+
+model User {
+  id                  Int           @id @default(autoincrement())
+  name                String
+  email               String        @unique
+  password_hash       String
+  role                Role
+  profile_picture_url String?
+  country_id          Int?
+  created_at          DateTime      @default(now())
+
+  country         Country?      @relation(fields: [country_id], references: [id], onDelete: SetNull)
+  instructor_data Instructor?
+  orders          Order[]
+  certificates    Certificate[]
+  quiz_attempts   QuizAttempt[]
+  reviews         Review[]
+  courses_taught  Course[]      @relation("InstructorCourses")
+
+  @@map("users")
+}
+
+model Course {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  instructor_id Int
+  price       Decimal   @db.Decimal(10, 2)
+  thumbnail_url String?
+  level       Level
+  is_published Boolean  @default(false)
+  created_at  DateTime  @default(now())
+
+  instructor        User             @relation("InstructorCourses", fields: [instructor_id], references: [id], onDelete: Cascade)
+  chapters          Chapter[]
+  orders            Order[]
+  certificates      Certificate[]
+  promotions        Promotion[]
+  reviews           Review[]
+  course_categories CourseCategory[]
+
+  @@index([instructor_id])
+  @@map("courses")
+}
+
+// ===================================
+// == MODUL PENDUKUNG ==
+// ===================================
+
+model Instructor {
+  user_id    Int      @id
+  title      String?
+  company    String?
+  bio        String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("instructors")
+}
+
+model Chapter {
+  id           Int      @id @default(autoincrement())
+  course_id    Int
+  title        String
+  summary_url  String?
+  order_number Int
+  created_at   DateTime @default(now())
+
+  course        Course        @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  lessons       Lesson[]
+  questions     Question[]
+  quizzes       Quiz[]
+  quiz_attempts QuizAttempt[]
+
+  @@map("chapters")
+}
+
+model Lesson {
+  id           Int      @id @default(autoincrement())
+  chapter_id   Int
+  title        String
+  video_url    String
+  order_number Int
+  duration     Int?
+  created_at   DateTime @default(now())
+
+  chapter Chapter @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
+
+  @@map("lessons")
+}
+
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  course_categories CourseCategory[]
+
+  @@map("categories")
+}
+
+model CourseCategory {
+  id          Int @id @default(autoincrement())
+  course_id   Int
+  category_id Int
+
+  course   Course   @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@map("course_categories")
+}
+
+// ===================================
+// == MODUL KUIS & SERTIFIKAT ==
+// ===================================
+
+model Quiz {
+  id          Int       @id @default(autoincrement())
+  chapter_id  Int
+  title       String
+  description String?
+  created_at  DateTime  @default(now())
+
+  chapter Chapter @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
+
+  @@map("quizzes")
+}
+
+model Question {
+  id         Int      @id @default(autoincrement())
+  chapter_id Int
+  text       String
+  created_at DateTime @default(now())
+
+  chapter Chapter  @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
+  answers Answer[]
+
+  @@map("questions")
+}
+
+model Answer {
+  id          Int      @id @default(autoincrement())
+  question_id Int
+  text        String
+  is_correct  Boolean
+
+  question Question @relation(fields: [question_id], references: [id], onDelete: Cascade)
+
+  @@map("answers")
+}
+
+model QuizAttempt {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  chapter_id   Int
+  score        Decimal  @db.Decimal(5, 2)
+  attempt_date DateTime @default(now())
+
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
+
+  @@map("quiz_attempts")
+}
+
+model Certificate {
+  id               Int      @id @default(autoincrement())
+  certificate_code String   @unique
+  user_id          Int
+  course_id        Int
+  date_issued      DateTime @default(now())
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [course_id], references: [id], onDelete: Cascade)
+
+  @@map("certificates")
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  course_id  Int
+  user_id    Int
+  rating     Int
+  comment    String?
+  created_at DateTime @default(now())
+
+  course Course @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
+
+// ===================================
+// == MODUL PEMBAYARAN & ORDER ==
+// ===================================
+
+model Order {
+  id           Int         @id @default(autoincrement())
+  user_id      Int
+  course_id    Int
+  status       OrderStatus
+  total_amount Decimal     @db.Decimal(10, 2)
+  created_at   DateTime    @default(now())
+
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [course_id], references: [id], onDelete: Restrict) // Order tidak boleh hilang jika course dihapus
+  invoice Invoice?
+
+  @@map("orders")
+}
+
+model Invoice {
+  id                Int      @id @default(autoincrement())
+  order_id          Int      @unique
+  invoice_number    String   @unique
+  payment_method_id Int
+  amount            Decimal  @db.Decimal(10, 2)
+  created_at        DateTime @default(now())
+
+  order          Order         @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  payment_method PaymentMethod @relation(fields: [payment_method_id], references: [id], onDelete: Restrict)
+
+  @@map("invoices")
+}
+
+model PaymentMethod {
+  id        Int       @id @default(autoincrement())
+  name      String
+  logo_url  String?
+  is_active Boolean   @default(true)
+
+  invoices Invoice[]
+
+  @@map("payment_methods")
+}
+
+model Promotion {
+  id                  Int      @id @default(autoincrement())
+  course_id           Int
+  code                String   @unique
+  discount_percentage Decimal  @db.Decimal(5, 2)
+  start_date          DateTime
+  end_date            DateTime
+  is_active           Boolean  @default(true)
+
+  course Course @relation(fields: [course_id], references: [id], onDelete: Cascade)
+
+  @@map("promotions")
+}
+
+// ===================================
+// == DATA MASTER & ENUM ==
+// ===================================
+
+model Country {
+  id         Int    @id @default(autoincrement())
+  name       String @unique
+  code       String @unique
+  phone_code String
+
+  users User[]
+
+  @@map("countries")
+}
+
+enum Role {
+  student
+  instructor
+  admin
+}
+
+enum Level {
+  beginner
+  intermediate
+  advanced
+}
+
+enum OrderStatus {
+  pending
+  completed
+  cancelled
+}
