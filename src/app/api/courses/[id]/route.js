@@ -35,7 +35,7 @@ export async function GET(request, { params }) {
               select: {
                 title: true,
                 video_url: true,
-                duration: true, // Sertakan durasi
+                duration: true,
               },
             },
           },
@@ -50,7 +50,6 @@ export async function GET(request, { params }) {
           },
         },
         reviews: {
-          // Ubah bagian ini
           include: {
             user: {
               select: {
@@ -67,7 +66,6 @@ export async function GET(request, { params }) {
       return new NextResponse("Course not found", { status: 404 });
     }
 
-    // Menghitung rata-rata rating dari data review yang sudah di-fetch
     const totalReviews = course.reviews.length;
     const averageRating =
       totalReviews > 0
@@ -75,12 +73,9 @@ export async function GET(request, { params }) {
           totalReviews
         : 0;
 
-    // Simpan review yang sudah diproses
     const reviewsWithUserDetails = course.reviews;
-    // Hapus data review mentah dari objek course utama
     delete course.reviews;
 
-    // Kirim kembali course, review yang sudah diproses, dan data agregat
     return NextResponse.json({
       ...course,
       reviews: reviewsWithUserDetails,

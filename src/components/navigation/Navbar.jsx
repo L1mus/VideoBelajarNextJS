@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useUserStore } from "@/store/userStore";
 import Logo from "./Logo";
 import NavLinks from "./NavLink";
 import UserProfile from "./UserProfile";
@@ -22,8 +23,16 @@ const Navbar = ({
   currentStep = 1,
 }) => {
   const { data: session, status } = useSession();
+  const { setSession, isAuthenticated, session: userSession } = useUserStore();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const isLoggedIn = status === "authenticated";
+
+  useEffect(() => {
+    if (status !== "loading") {
+      setSession(session);
+    }
+  }, [session, status, setSession]);
+
+  const isLoggedIn = isAuthenticated;
 
   const truncateTitle = (title) => {
     return title.split(" ")[0] + "...";
@@ -31,7 +40,7 @@ const Navbar = ({
 
   return (
     <nav className="bg-white shadow-md">
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <div className="hidden md:flex items-center justify-between w-full">
             <div className="flex items-center">
@@ -49,15 +58,20 @@ const Navbar = ({
                   <NavLinks />
                   <div className="ml-4 flex items-center">
                     {isLoggedIn ? (
-                      <UserProfile avatar="/assets/images/avatar.jpg" />
+                      <UserProfile
+                        avatar={
+                          userSession?.user?.image ||
+                          "/assets/images/avatar.jpg"
+                        }
+                      />
                     ) : (
                       <div className="flex items-center space-x-2">
-                        <Link href="/login">
+                        <Link href="/login" passHref>
                           <Button variant="solid" color="primary" size="md">
                             Login
                           </Button>
                         </Link>
-                        <Link href="/register">
+                        <Link href="/register" passHref>
                           <Button variant="outline" color="primary" size="md">
                             Register
                           </Button>
@@ -127,7 +141,7 @@ const Navbar = ({
       </div>
       {navType === "payment" && (
         <div className="md:hidden border-t border-gray-200">
-          <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <Stepper currentStep={currentStep}>
               <Step title="Pilih Metode" />
               <Step title="Bayar" />
@@ -143,12 +157,16 @@ const Navbar = ({
             <div className="px-3 pt-4 pb-2 border-t">
               {isLoggedIn ? (
                 <div className="flex items-center gap-x-3">
-                  <UserProfile avatar="/assets/images/avatar.jpg" />
-                  <p className="font-semibold">{session.user.name}</p>
+                  <UserProfile
+                    avatar={
+                      userSession?.user?.image || "/assets/images/avatar.jpg"
+                    }
+                  />
+                  <p className="font-semibold">{userSession?.user?.name}</p>
                 </div>
               ) : (
                 <div className="flex flex-col space-y-2">
-                  <Link href="/login">
+                  <Link href="/login" passHref>
                     <Button
                       variant="solid"
                       color="primary"
@@ -158,7 +176,7 @@ const Navbar = ({
                       Login
                     </Button>
                   </Link>
-                  <Link href="/register">
+                  <Link href="/register" passHref>
                     <Button
                       variant="outline"
                       color="primary"

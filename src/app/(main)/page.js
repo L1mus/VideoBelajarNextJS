@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useCourseStore } from "@/store/courseStore";
 import Hero from "@/components/hero/Hero";
 import Newsletter from "@/components/newsletter/Newsletter";
 import FilterTabGroup from "@/components/filters/FilterTabGroup";
@@ -11,66 +12,28 @@ import CourseCardSkeleton from "@/components/card/CourseCardSkeleton";
 import Pagination from "@/components/pagination/Pagination";
 
 export default function HomePage() {
-  const [courses, setCourses] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("Semua Kelas");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
+  const {
+    categories,
+    isLoading,
+    error,
+    activeTab,
+    currentPage,
+    fetchData,
+    setActiveTab,
+    setCurrentPage,
+    getFilteredCourses,
+    getCurrentPageCourses,
+    setSelectedCourse,
+  } = useCourseStore();
+
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [coursesRes, categoriesRes] = await Promise.all([
-          fetch("/api/courses"),
-          fetch("/api/categories"),
-        ]);
-        if (!coursesRes.ok || !categoriesRes.ok)
-          throw new Error("Gagal memuat data");
-
-        const coursesData = await coursesRes.json();
-        const categoriesData = await categoriesRes.json();
-
-        setCourses(coursesData.courses || []);
-        const categoryTabs = [
-          "Semua Kelas",
-          ...categoriesData.map((cat) => cat.name),
-        ];
-        setCategories(categoryTabs);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchData();
-  }, []);
+  }, [fetchData]);
 
-  const filteredCourses =
-    activeTab === "Semua Kelas"
-      ? courses
-      : courses.filter(
-          (course) =>
-            Array.isArray(course.course_categories) &&
-            course.course_categories.some(
-              (cc) => cc.category && cc.category.name === activeTab
-            )
-        );
-
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentCourses = filteredCourses.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-    window.scrollTo(0, 0);
-  };
+  const filteredCourses = getFilteredCourses();
+  const currentCourses = getCurrentPageCourses();
 
   return (
     <div className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -88,10 +51,7 @@ export default function HomePage() {
           <FilterTabGroup
             tabs={categories}
             defaultTab={activeTab}
-            onTabChange={(tab) => {
-              setActiveTab(tab);
-              setCurrentPage(1);
-            }}
+            onTabChange={setActiveTab}
           />
         </div>
         {error && (
@@ -110,37 +70,39 @@ export default function HomePage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 justify-items-center">
               {currentCourses.map((course, index) => (
-                <Link href={`/courses/${course.id}`} key={course.id}>
-                  <CourseCard
-                    isPriority={index === 0}
-                    variant={isMobile ? "mobile" : "default"}
-                    title={course.title}
-                    description={course.description}
-                    authorName={course.instructor.name}
-                    authorImage={
-                      course.instructor.profile_picture_url ||
-                      "/assets/images/avatar.jpg"
-                    }
-                    authorRole={
-                      course.instructor.instructor_data?.title || "Instructor"
-                    }
-                    authorCompany={
-                      course.instructor.instructor_data?.company || ""
-                    }
-                    rating={4.5}
-                    reviewCount={86}
-                    price={Number(course.price)}
-                    imageUrl={course.thumbnail_url}
-                  />
-                </Link>
+                <div key={course.id} onClick={() => setSelectedCourse(course)}>
+                  <Link href={`/courses/${course.id}`}>
+                    <CourseCard
+                      isPriority={index === 0}
+                      variant={isMobile ? "mobile" : "default"}
+                      title={course.title}
+                      description={course.description}
+                      authorName={course.instructor.name}
+                      authorImage={
+                        course.instructor.profile_picture_url ||
+                        "/assets/images/avatar.jpg"
+                      }
+                      authorRole={
+                        course.instructor.instructor_data?.title || "Instructor"
+                      }
+                      authorCompany={
+                        course.instructor.instructor_data?.company || ""
+                      }
+                      rating={4.5}
+                      reviewCount={86}
+                      price={Number(course.price)}
+                      imageUrl={course.thumbnail_url}
+                    />
+                  </Link>
+                </div>
               ))}
             </div>
             <div className="mt-12 flex justify-end">
               <Pagination
                 currentPage={currentPage}
                 totalItems={filteredCourses.length}
-                itemsPerPage={itemsPerPage}
-                onPageChange={handlePageChange}
+                itemsPerPage={useCourseStore.getState().itemsPerPage}
+                onPageChange={setCurrentPage}
               />
             </div>
           </>

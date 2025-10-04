@@ -1,20 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useCheckoutStore } from "@/store/checkoutStore";
 import Button from "@/components/button/Button";
 import PurchaseSummaryCard from "@/components/card/PurchaseSummaryCard";
 import PaymentAccordion from "@/components/payment/PaymentAccordion";
 import { createOrderAndRedirect } from "./actions";
 
-const OrderTotalsCard = ({
-  subtotal,
-  adminFee,
-  total,
-  isButtonDisabled,
-  courseTitle,
-}) => {
+const OrderTotalsCard = ({ subtotal, adminFee, total, courseTitle }) => {
+  const { selectedMethodId } = useCheckoutStore();
+  const isButtonDisabled = !selectedMethodId;
   const formatCurrency = (value) => `Rp ${value.toLocaleString("id-ID")}`;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col gap-4">
       <h3 className="text-xl font-bold text-foreground">Ringkasan Pesanan</h3>
@@ -52,44 +50,29 @@ const OrderTotalsCard = ({
   );
 };
 
-export default function PaymentClientPage({ course }) {
-  const { status } = useSession();
-  const [paymentMethods, setPaymentMethods] = useState({
-    bankTransfer: [],
-    eWallet: [],
-    creditCard: [],
-  });
-  const [selectedMethod, setSelectedMethod] = useState(null);
-  const [isFetchingMethods, setIsFetchingMethods] = useState(true);
+export default function PaymentClientPage({ course: initialCourse }) {
+  const {
+    paymentMethods,
+    selectedMethodId,
+    isLoading,
+    fetchPaymentMethods,
+    setSelectedMethodId,
+    setCourse,
+  } = useCheckoutStore();
 
   useEffect(() => {
-    const fetchPaymentMethods = async () => {
-      try {
-        setIsFetchingMethods(true);
-        const response = await fetch("/api/payment-methods");
-        if (!response.ok) {
-          throw new Error("Gagal memuat metode pembayaran");
-        }
-        const data = await response.json();
-        setPaymentMethods(data);
-      } catch (error) {
-        console.error("Fetch Payment Methods Error:", error);
-      } finally {
-        setIsFetchingMethods(false);
-      }
-    };
-
+    setCourse(initialCourse);
     fetchPaymentMethods();
-  }, []);
+  }, [initialCourse, setCourse, fetchPaymentMethods]);
 
-  const discountedPrice = Number(course.price) / 2;
+  const discountedPrice = Number(initialCourse.price) / 2;
   const adminFee = 7000;
   const total = discountedPrice + adminFee;
 
   const courseIncludes = [
     {
       icon: "/assets/icons/icon-video.svg",
-      text: `${course.chapters.reduce(
+      text: `${initialCourse.chapters.reduce(
         (acc, chapter) => acc + chapter.lessons.length,
         0
       )} Video`,
@@ -101,12 +84,12 @@ export default function PaymentClientPage({ course }) {
 
   return (
     <form action={createOrderAndRedirect}>
-      <input type="hidden" name="courseId" value={course.id} />
+      <input type="hidden" name="courseId" value={initialCourse.id} />
       <input type="hidden" name="totalAmount" value={total} />
       <input
         type="hidden"
         name="paymentMethodId"
-        value={selectedMethod || ""}
+        value={selectedMethodId || ""}
       />
 
       <div className="min-h-screen">
@@ -115,65 +98,59 @@ export default function PaymentClientPage({ course }) {
             <div className="lg:col-span-2 flex flex-col gap-y-8">
               <div className="lg:hidden">
                 <PurchaseSummaryCard
-                  title={course.title}
-                  price={Number(course.price)}
+                  title={initialCourse.title}
+                  price={Number(initialCourse.price)}
                   discountedPrice={discountedPrice}
                   discountPercentage={50}
                   includes={courseIncludes}
                   language="Bahasa Indonesia"
-                  imageUrl={course.thumbnail_url}
+                  imageUrl={initialCourse.thumbnail_url}
                 />
               </div>
-
-              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm max-w-[798px]">
                 <h2 className="text-xl font-bold text-foreground mb-6">
                   Metode Pembayaran
                 </h2>
-                {isFetchingMethods ? (
+                {isLoading ? (
                   <p>Memuat metode pembayaran...</p>
                 ) : (
                   <div className="space-y-4">
                     <PaymentAccordion
                       title="Transfer Bank"
                       methods={paymentMethods.bankTransfer}
-                      selectedMethod={selectedMethod}
-                      onSelectMethod={setSelectedMethod}
+                      selectedMethod={selectedMethodId}
+                      onSelectMethod={setSelectedMethodId}
                     />
                     <PaymentAccordion
                       title="E-Wallet"
                       methods={paymentMethods.eWallet}
-                      selectedMethod={selectedMethod}
-                      onSelectMethod={setSelectedMethod}
+                      selectedMethod={selectedMethodId}
+                      onSelectMethod={setSelectedMethodId}
                     />
                     <PaymentAccordion
                       title="Kartu Kredit/Debit"
                       methods={paymentMethods.creditCard}
-                      selectedMethod={selectedMethod}
-                      onSelectMethod={setSelectedMethod}
+                      selectedMethod={selectedMethodId}
+                      onSelectMethod={setSelectedMethodId}
                     />
                   </div>
                 )}
               </div>
-
-              {/* Card Ringkasan Pesanan */}
+              <div className="md:hidden">
+                <OrderTotalsCard
+                  subtotal={discountedPrice}
+                  adminFee={adminFee}
+                  total={total}
+                  courseTitle={initialCourse.title}
+                />
+              </div>
+            </div>
+            <div className="hidden lg:block lg:col-span-1 sticky top-28">
               <OrderTotalsCard
                 subtotal={discountedPrice}
                 adminFee={adminFee}
                 total={total}
-                courseTitle={course.title}
-                isButtonDisabled={!selectedMethod}
-              />
-            </div>
-
-            <div className="hidden lg:block lg:col-span-1 sticky top-28">
-              <PurchaseSummaryCard
-                title={course.title}
-                price={Number(course.price)}
-                discountedPrice={discountedPrice}
-                discountPercentage={50}
-                includes={courseIncludes}
-                language="Bahasa Indonesia"
-                imageUrl={course.thumbnail_url}
+                courseTitle={initialCourse.title}
               />
             </div>
           </div>
