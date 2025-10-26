@@ -4,6 +4,10 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+## File tabel endpoint
+
+https://docs.google.com/spreadsheets/d/1wHZ7C0mxMo7uM4nktLMvm-oK7sKtZt15bSvlBpxRnL4/edit?usp=sharing
+
 First, run the development server:
 
 ```bash
