@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { signOut } from "next-auth/react";
 import LogoutIcon from "../icons/LogoutIcon";
+import Link from "next/link";
 
 const UserProfile = ({ avatar }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,6 +21,10 @@ const UserProfile = ({ avatar }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  const handleLinkClick = () => {
+    setIsOpen(false);
+  };
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -38,18 +43,33 @@ const UserProfile = ({ avatar }) => {
 
       {isOpen && (
         <div className="absolute mt-3 w-56 bg-white rounded-lg shadow-xl py-2 z-20 border border-gray-100 left-0 md:left-auto md:right-0">
-          <a href="#" className="block px-5 py-3 text-base hover:bg-gray-50">
+          <Link
+            href="/profilesaya"
+            className="block px-5 py-3 text-base hover:bg-gray-50"
+            onClick={handleLinkClick}
+          >
             Profil Saya
-          </a>
-          <a href="#" className="block px-5 py-3 text-base hover:bg-gray-50">
+          </Link>
+          <Link
+            href="/kelassaya"
+            className="block px-5 py-3 text-base hover:bg-gray-50"
+            onClick={handleLinkClick}
+          >
             Kelas Saya
-          </a>
-          <a href="#" className="block px-5 py-3 text-base hover:bg-gray-100">
+          </Link>
+          <Link
+            href="/pesanansaya"
+            className="block px-5 py-3 text-base hover:bg-gray-100"
+            onClick={handleLinkClick}
+          >
             Pesanan Saya
-          </a>
+          </Link>
           <div className="border-t border-gray-100 my-1"></div>
           <button
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => {
+              handleLinkClick();
+              signOut({ callbackUrl: "/" });
+            }}
             className="w-full text-left flex items-center justify-between px-5 py-3 text-base text-error-default hover:bg-gray-50"
           >
             <span>Keluar</span>

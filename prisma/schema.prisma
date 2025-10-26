@@ -23,6 +23,8 @@ model User {
   profile_picture_url String?
   country_id          Int?
   created_at          DateTime      @default(now())
+  phone               String?
+  gender              Gender? 
 
   country         Country?      @relation(fields: [country_id], references: [id], onDelete: SetNull)
   instructor_data Instructor?
@@ -36,15 +38,15 @@ model User {
 }
 
 model Course {
-  id          Int       @id @default(autoincrement())
-  title       String
-  description String?
-  instructor_id Int
-  price       Decimal   @db.Decimal(10, 2)
-  thumbnail_url String?
-  level       Level
-  is_published Boolean  @default(false)
-  created_at  DateTime  @default(now())
+  id                Int       @id @default(autoincrement())
+  title             String
+  description       String?
+  instructor_id     Int
+  price             Decimal   @db.Decimal(10, 2)
+  thumbnail_url     String?
+  level             Level
+  is_published      Boolean   @default(false)
+  created_at        DateTime  @default(now())
 
   instructor        User             @relation("InstructorCourses", fields: [instructor_id], references: [id], onDelete: Cascade)
   chapters          Chapter[]
@@ -218,7 +220,7 @@ model Order {
   created_at   DateTime    @default(now())
 
   user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  course  Course  @relation(fields: [course_id], references: [id], onDelete: Restrict) // Order tidak boleh hilang jika course dihapus
+  course  Course  @relation(fields: [course_id], references: [id], onDelete: Restrict)
   invoice Invoice?
 
   @@map("orders")
@@ -294,4 +296,9 @@ enum OrderStatus {
   pending
   completed
   cancelled
+}
+
+enum Gender {
+  Laki_laki
+  Perempuan
 }

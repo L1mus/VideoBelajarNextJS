@@ -13,6 +13,7 @@ export const useUserStore = create((set, get) => ({
       name: "",
       email: "",
       phone: "",
+      gender: "",
       password: "",
       confirmPassword: "",
     },
@@ -44,6 +45,18 @@ export const useUserStore = create((set, get) => ({
         [formType]: {
           ...state.form[formType],
           [name]: value,
+        },
+      },
+    }));
+  },
+
+  setRegisterFormField: (fieldName, value) => {
+    set((state) => ({
+      form: {
+        ...state.form,
+        register: {
+          ...state.form.register,
+          [fieldName]: value,
         },
       },
     }));
@@ -81,11 +94,19 @@ export const useUserStore = create((set, get) => ({
 
   registerUser: async (routerPush) => {
     set({ formLoading: true, formError: null });
-    const { name, email, password, confirmPassword } = get().form.register;
+    const { name, email, phone, gender, password, confirmPassword } =
+      get().form.register;
     const { showToast } = useNotificationStore.getState();
 
     try {
-      if (!name || !email || !password || !confirmPassword) {
+      if (
+        !name ||
+        !email ||
+        !phone ||
+        !gender ||
+        !password ||
+        !confirmPassword
+      ) {
         throw new Error("Semua kolom wajib diisi.");
       }
       if (password !== confirmPassword) {
@@ -94,11 +115,11 @@ export const useUserStore = create((set, get) => ({
       if (password.length < 8) {
         throw new Error("Kata sandi minimal harus 8 karakter.");
       }
-
       const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+
+        body: JSON.stringify({ name, email, phone, gender, password }),
       });
 
       const result = await response.json();
@@ -117,6 +138,7 @@ export const useUserStore = create((set, get) => ({
             name: "",
             email: "",
             phone: "",
+            gender: "",
             password: "",
             confirmPassword: "",
           },

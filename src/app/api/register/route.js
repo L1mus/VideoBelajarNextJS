@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
 import bcrypt from "bcrypt";
-
-const prisma = new PrismaClient();
-
+import { Gender } from "@prisma/client";
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, email, password } = body;
+    const { name, email, phone, gender, password } = body;
 
-    // 1. Validasi input dasar
-    if (!name || !email || !password) {
-      return new NextResponse("Nama, email, dan kata sandi harus diisi.", {
+    if (!name || !email || !phone || !gender || !password) {
+      return new NextResponse("Semua field wajib diisi.", {
         status: 400,
       });
     }
@@ -23,6 +20,13 @@ export async function POST(request) {
 
     if (password.length < 8) {
       return new NextResponse("Kata sandi minimal harus 8 karakter.", {
+        status: 400,
+      });
+    }
+
+    const validGenders = Object.values(Gender);
+    if (!validGenders.includes(gender)) {
+      return new NextResponse("Nilai jenis kelamin tidak valid.", {
         status: 400,
       });
     }
@@ -42,6 +46,8 @@ export async function POST(request) {
         name,
         email,
         password_hash: hashedPassword,
+        phone,
+        gender,
         role: "student",
       },
     });
@@ -50,6 +56,13 @@ export async function POST(request) {
     return NextResponse.json(userWithoutPassword);
   } catch (error) {
     console.log("REGISTRATION ERROR", error);
+    if (error.code === "P2022" && error.meta?.target?.includes("gender")) {
+      return new NextResponse("Nilai jenis kelamin tidak valid.", {
+        status: 400,
+      });
+    }
     return new NextResponse("Terjadi kesalahan internal.", { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }
