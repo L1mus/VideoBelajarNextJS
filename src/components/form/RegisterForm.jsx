@@ -160,12 +160,10 @@ const RegisterForm = () => {
     const [isGenderOpen, setIsGenderOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const genderDropdownRef = useRef(null);
-    const genderOptions = ["Perempuan", "Laki-laki"];
     const {
         register,
         control,
         handleSubmit,
-        setValue,
         watch,
         formState: { errors },
     } = useForm({
