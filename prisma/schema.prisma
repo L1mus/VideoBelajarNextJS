@@ -15,38 +15,39 @@ datasource db {
 // ===================================
 
 model User {
-  id                  Int           @id @default(autoincrement())
+  id                  Int      @id @default(autoincrement())
   name                String
-  email               String        @unique
+  email               String   @unique
   password_hash       String
   role                Role
   profile_picture_url String?
   country_id          Int?
-  created_at          DateTime      @default(now())
+  created_at          DateTime @default(now())
   phone               String?
-  gender              Gender? 
+  gender              Gender?
 
-  country         Country?      @relation(fields: [country_id], references: [id], onDelete: SetNull)
+  country         Country?       @relation(fields: [country_id], references: [id], onDelete: SetNull)
   instructor_data Instructor?
   orders          Order[]
   certificates    Certificate[]
   quiz_attempts   QuizAttempt[]
   reviews         Review[]
-  courses_taught  Course[]      @relation("InstructorCourses")
+  courses_taught  Course[]       @relation("InstructorCourses")
+  progress        UserProgress[]
 
   @@map("users")
 }
 
 model Course {
-  id                Int       @id @default(autoincrement())
-  title             String
-  description       String?
-  instructor_id     Int
-  price             Decimal   @db.Decimal(10, 2)
-  thumbnail_url     String?
-  level             Level
-  is_published      Boolean   @default(false)
-  created_at        DateTime  @default(now())
+  id            Int      @id @default(autoincrement())
+  title         String
+  description   String?
+  instructor_id Int
+  price         Decimal  @db.Decimal(10, 2)
+  thumbnail_url String?
+  level         Level
+  is_published  Boolean  @default(false)
+  created_at    DateTime @default(now())
 
   instructor        User             @relation("InstructorCourses", fields: [instructor_id], references: [id], onDelete: Cascade)
   chapters          Chapter[]
@@ -94,6 +95,21 @@ model Chapter {
   @@map("chapters")
 }
 
+model UserProgress {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  lesson_id    Int
+  is_completed Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, lesson_id])
+  @@map("user_progress")
+}
+
 model Lesson {
   id           Int      @id @default(autoincrement())
   chapter_id   Int
@@ -103,7 +119,8 @@ model Lesson {
   duration     Int?
   created_at   DateTime @default(now())
 
-  chapter Chapter @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
+  chapter       Chapter        @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
+  user_progress UserProgress[]
 
   @@map("lessons")
 }
@@ -133,11 +150,11 @@ model CourseCategory {
 // ===================================
 
 model Quiz {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   chapter_id  Int
   title       String
   description String?
-  created_at  DateTime  @default(now())
+  created_at  DateTime @default(now())
 
   chapter Chapter @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
 
@@ -157,7 +174,7 @@ model Question {
 }
 
 model Answer {
-  id          Int      @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   question_id Int
   text        String
   is_correct  Boolean
@@ -219,8 +236,8 @@ model Order {
   total_amount Decimal     @db.Decimal(10, 2)
   created_at   DateTime    @default(now())
 
-  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  course  Course  @relation(fields: [course_id], references: [id], onDelete: Restrict)
+  user    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  course  Course   @relation(fields: [course_id], references: [id], onDelete: Restrict)
   invoice Invoice?
 
   @@map("orders")
@@ -241,10 +258,10 @@ model Invoice {
 }
 
 model PaymentMethod {
-  id        Int       @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
   name      String
   logo_url  String?
-  is_active Boolean   @default(true)
+  is_active Boolean @default(true)
 
   invoices Invoice[]
 
