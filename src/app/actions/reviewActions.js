@@ -6,7 +6,6 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-// Schema Validasi Review
 const reviewSchema = z.object({
     rating: z.coerce.number().min(1).max(5),
     comment: z.string().min(5, "Ulasan minimal 5 karakter").max(500, "Ulasan maksimal 500 karakter"),
