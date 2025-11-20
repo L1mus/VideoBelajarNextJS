@@ -15,16 +15,18 @@ datasource db {
 // ===================================
 
 model User {
-  id                  Int      @id @default(autoincrement())
+  id                  Int       @id @default(autoincrement())
   name                String
-  email               String   @unique
-  password_hash       String
+  email               String    @unique
+  password_hash       String?
   role                Role
   profile_picture_url String?
   country_id          Int?
-  created_at          DateTime @default(now())
+  created_at          DateTime  @default(now())
   phone               String?
   gender              Gender?
+  verificationToken   String?   @unique
+  emailVerified       DateTime?
 
   country         Country?       @relation(fields: [country_id], references: [id], onDelete: SetNull)
   instructor_data Instructor?
