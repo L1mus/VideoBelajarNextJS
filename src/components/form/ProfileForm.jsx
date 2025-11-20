@@ -7,74 +7,21 @@ import ChevronDownIcon from "@/components/icons/ChevronDownIcon";
 import { useNotificationStore } from "@/store/notificationStore";
 import { useFormState } from "react-dom";
 import { updateProfileUnprotected } from "@/app/(profile)/profilesaya/actions";
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import prisma from "@/lib/prisma";
-import { saveFile } from "@/lib/upload";
-
-export async function POST(request) {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-        return new NextResponse("Unauthorized", { status: 401 });
-    }
-
-    try {
-        const formData = await request.formData();
-        const file = formData.get("file");
-        if (!file) {
-            return new NextResponse("Tidak ada file yang diunggah.", { status: 400 });
-        }
-
-        if (!file.type.startsWith("image/")) {
-            return new NextResponse("Format file harus gambar.", { status: 400 });
-        }
-
-        const fileUrl = await saveFile(file);
-        const userId = parseInt(session.user.id, 10);
-        await prisma.user.update({
-            where: { id: userId },
-            data: { profile_picture_url: fileUrl },
-        });
-
-        return NextResponse.json({ message: "Upload berhasil", url: fileUrl });
-    } catch (error) {
-        console.error("Upload Error:", error);
-        return new NextResponse("Internal Server Error", { status: 500 });
-    }
-}
 
 const EyeOpenIcon = () => (
-    <Image
-        src="/assets/icons/icon-eye-on.svg"
-        width={20}
-        height={20}
-        alt="Show"
-    />
+    <Image src="/assets/icons/icon-eye-on.svg" width={20} height={20} alt="Show" />
 );
 const EyeClosedIcon = () => (
-    <Image
-        src="/assets/icons/icon-eye-off.svg"
-        width={20}
-        height={20}
-        alt="Hide"
-    />
+    <Image src="/assets/icons/icon-eye-off.svg" width={20} height={20} alt="Hide" />
 );
 
-const Fieldset = ({
-                      legend,
-                      children,
-                      className = "",
-                      legendClassName = "",
-                  }) => (
+const Fieldset = ({ legend, children, className = "", legendClassName = "" }) => (
     <fieldset
         className={`group border border-gray-300 rounded-lg px-4 pt-2.5 pb-2 relative mt-3
                 focus-within:border-primary-default focus-within:ring-1 focus-within:ring-primary-default
                 transition-colors duration-200 ease-in-out ${className}`}
     >
-        <legend
-            className={`text-sm font-medium text-gray-700 px-1 mx-2 absolute -top-2.5 bg-white ${legendClassName}`}
-        >
+        <legend className={`text-sm font-medium text-gray-700 px-1 mx-2 absolute -top-2.5 bg-white ${legendClassName}`}>
             {legend}
         </legend>
         {children}
@@ -88,6 +35,9 @@ const ProfileForm = ({ initialData }) => {
         message: null,
     });
 
+    const [avatarUrl, setAvatarUrl] = useState(initialData.avatarUrl || "/assets/images/avatar9.jpg");
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef(null);
     const [gender, setGender] = useState(initialData.gender || "Perempuan");
     const [isGenderOpen, setIsGenderOpen] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -144,18 +94,73 @@ const ProfileForm = ({ initialData }) => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    const handleAvatarClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+            showToast("Mohon upload file gambar.", "error");
+            return;
+        }
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const response = await fetch("/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error("Gagal mengupload gambar");
+            }
+
+            const result = await response.json();
+
+            setAvatarUrl(result.url);
+            showToast("Foto profil berhasil diperbarui!", "success");
+
+        } catch (error) {
+            console.error(error);
+            showToast("Gagal mengupload foto profil.", "error");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     const countryOptions = countries.length > 0 ? countries : [{ name: "Indonesia", code: "+62" }];
 
     return (
         <form action={formAction} className="space-y-5">
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*"
+            />
+
             <div className="flex items-center gap-4 pb-4 border-b border-gray-200">
-                <Image
-                    src={initialData.avatarUrl || "/assets/images/avatar9.jpg"}
-                    alt="Foto Profil"
-                    width={64}
-                    height={64}
-                    className="rounded-full object-cover"
-                />
+                <div className="relative">
+                    <Image
+                        src={avatarUrl}
+                        alt="Foto Profil"
+                        width={64}
+                        height={64}
+                        className={`rounded-full object-cover ${isUploading ? "opacity-50" : ""}`}
+                    />
+                    {isUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="loading loading-spinner loading-xs">...</span>
+                        </div>
+                    )}
+                </div>
                 <div>
                     <p className="font-semibold text-base text-foreground">
                         {initialData.name || "Nama Pengguna"}
@@ -165,9 +170,11 @@ const ProfileForm = ({ initialData }) => {
                     </p>
                     <button
                         type="button"
-                        className="text-sm text-error-pressed hover:underline mt-1 font-medium"
+                        onClick={handleAvatarClick}
+                        disabled={isUploading}
+                        className="text-sm text-error-default hover:text-error-pressed hover:underline mt-1 font-medium disabled:opacity-50 cursor-pointer"
                     >
-                        Ganti Foto Profil
+                        {isUploading ? "Mengupload..." : "Ganti Foto Profil"}
                     </button>
                 </div>
             </div>
@@ -236,9 +243,9 @@ const ProfileForm = ({ initialData }) => {
                         className="w-full flex items-center justify-evenly border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-primary-default h-[42.39px]"
                         onClick={() => setIsCountryCodeOpen(!isCountryCodeOpen)}
                     >
-            <span className="text-sm font-medium text-gray-700">
-              {selectedCountry.code}
-            </span>
+                        <span className="text-sm font-medium text-gray-700">
+                        {selectedCountry.code}
+                        </span>
                         <ChevronDownIcon
                             className={`w-4 h-4 transition-transform text-gray-400 ${isCountryCodeOpen ? "rotate-180" : ""}`}
                         />
