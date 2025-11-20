@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 export async function updateUserProfile(userId, data) {
     const { password, ...profileData } = data;
