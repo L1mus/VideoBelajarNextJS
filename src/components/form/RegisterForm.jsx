@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUserStore } from "@/store/userStore";
 import Image from "next/image";
 import Button from "../button/Button";
 import ChevronDownIcon from "../icons/ChevronDownIcon";
@@ -10,13 +9,17 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
+import { useNotificationStore } from "@/store/notificationStore";
+
 const registerSchema = z.object({
-    name: z.string().min(1, "Nama Lengkap wajib di isi"),
-    email: z.string().min(1, "Email wajib di isi").email("Format email tidak valid"),
+    name: z.string().min(1, "Nama Lengkap wajib diisi"),
+    email: z.string().min(1, "Email wajib diisi").email("Format email tidak valid"),
     gender: z.enum(["Laki_laki", "Perempuan"], {
         errorMap: () => ({ message: "Pilih jenis kelamin" }),
     }),
-    phone: z.string().min(10, "Nomor HP minimal 10 digit").regex(/^[0-9]+$/, "Hanya angka yang diperbolehkan"),
+    phone: z.string()
+        .min(10, "Nomor HP minimal 10 digit")
+        .regex(/^\+?[0-9]+$/, "Format nomor HP tidak valid (hanya angka dan tanda +)"),
     password: z.string().min(8, "Kata sandi minimal 8 karakter"),
     confirmPassword: z.string().min(1, "Konfirmasi kata sandi wajib diisi"),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -24,6 +27,7 @@ const registerSchema = z.object({
     path: ["confirmPassword"],
 });
 
+// --- Komponen PhoneInput ---
 const PhoneInput = ({
                         label,
                         error,
@@ -36,7 +40,6 @@ const PhoneInput = ({
     const defaultCountry = countries.length > 0 ? countries[0] : {
         name: "Indonesia",
         code: "+62",
-        flag: "/assets/icons/icon-indonesia.svg",
     };
     const [selectedCountry, setSelectedCountry] = useState(defaultCountry);
     const dropdownRef = useRef(null);
@@ -50,6 +53,21 @@ const PhoneInput = ({
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    const getDisplayValue = (val) => {
+        if (!val) return "";
+        if (val.startsWith(selectedCountry.code)) {
+            return val.slice(selectedCountry.code.length);
+        }
+        return val;
+    };
+
+    const handleInputChange = (e) => {
+        const inputValue = e.target.value;
+        if (/^[0-9]*$/.test(inputValue)) {
+            onChange(`${selectedCountry.code}${inputValue}`);
+        }
+    };
 
     return (
         <div className="flex flex-col gap-2">
@@ -86,6 +104,7 @@ const PhoneInput = ({
                                     onClick={() => {
                                         setSelectedCountry(country);
                                         setIsOpen(false);
+                                        onChange(country.code);
                                     }}
                                 >
                                     <span>{country.name} ({country.code})</span>
@@ -97,8 +116,8 @@ const PhoneInput = ({
                 <div className="w-3/4">
                     <input
                         type="tel"
-                        value={value || ""}
-                        onChange={onChange}
+                        value={getDisplayValue(value)}
+                        onChange={handleInputChange}
                         className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-default ${
                             error ? "border-red-500 focus:ring-red-200" : "border-gray-300"
                         } ${disabled ? "bg-gray-100 cursor-not-allowed text-gray-500" : ""}`}
@@ -112,6 +131,7 @@ const PhoneInput = ({
     );
 };
 
+// --- Komponen Input Biasa ---
 const Input = ({
                    label,
                    type = "text",
@@ -152,14 +172,16 @@ const Input = ({
 
 const RegisterForm = () => {
     const router = useRouter();
-    const { registerUser } = useUserStore();
-    const [countries, setCountries] = useState([]);
-    const [isCountryLoading, setIsCountryLoading] = useState(true);
+    const { showToast } = useNotificationStore();
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
     const [isGenderOpen, setIsGenderOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [countries, setCountries] = useState([]);
+    const [isCountryLoading, setIsCountryLoading] = useState(true);
+
     const genderDropdownRef = useRef(null);
+
     const {
         register,
         control,
@@ -170,16 +192,66 @@ const RegisterForm = () => {
         resolver: zodResolver(registerSchema),
         defaultValues: {
             gender: "",
-            phone: ""
+            phone: "+62" // Set default value agar validasi min 10 digit berjalan normal
         }
     });
 
     const selectedGender = watch("gender");
     const onSubmit = async (data) => {
         setIsLoading(true);
-        const success = await registerUser(data);
-        setIsLoading(false);
+        try {
+            const response = await fetch("/api/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: data.name,
+                    email: data.email,
+                    phone: data.phone,
+                    gender: data.gender,
+                    password: data.password
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || "Gagal mendaftar.");
+            }
+
+            showToast("Registrasi berhasil! Silakan login.", "success");
+
+            setTimeout(() => {
+                router.push("/login");
+            }, 1500);
+
+        } catch (error) {
+            console.error("Register Error:", error);
+            showToast(error.message, "error");
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+    useEffect(() => {
+        const fetchCountries = async () => {
+            try {
+                const response = await fetch("/api/countries");
+                if (response.ok) {
+                    const data = await response.json();
+                    const mappedCountries = data.map((c) => ({
+                        name: c.name,
+                        code: c.phone_code,
+                    }));
+                    setCountries(mappedCountries);
+                }
+            } catch (error) {
+                console.error("Gagal mengambil data negara:", error);
+            } finally {
+                setIsCountryLoading(false);
+            }
+        };
+        fetchCountries();
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -192,39 +264,10 @@ const RegisterForm = () => {
     }, []);
 
     const countryData = [
-        { name: "Indonesia", code: "+62", flag: "/assets/icons/icon-indonesia.svg" },
+        { name: "Indonesia", code: "+62" },
     ];
 
-    useEffect(() => {
-        const fetchCountries = async () => {
-            try {
-                const response = await fetch("/api/countries");
-                if (response.ok) {
-                    const data = await response.json();
-                    const mappedCountries = data.map((c) => ({
-                        name: c.name,
-                        code: c.phone_code,
-                        flag: "/assets/icons/icon-indonesia.svg",
-                    }));
-
-                    setCountries(mappedCountries);
-                }
-            } catch (error) {
-                console.error("Gagal mengambil data negara:", error);
-            } finally {
-                setIsCountryLoading(false);
-            }
-        };
-
-        fetchCountries();
-    }, []);
-
-    const defaultCountries = [
-        { name: "Indonesia", code: "+62", flag: "/assets/icons/icon-indonesia.svg" },
-    ];
-
-    const countryOptions = countries.length > 0 ? countries : defaultCountries;
-
+    const countryOptions = countries.length > 0 ? countries : countryData;
     return (
         <div className="bg-white border border-gray-200 flex flex-col w-full max-w-sm md:max-w-xl p-5 md:p-9 gap-5 md:gap-9 rounded-lg">
             <div className="flex flex-col text-center gap-2">
@@ -281,30 +324,20 @@ const RegisterForm = () => {
                                 {isGenderOpen && (
                                     <div className="absolute top-full z-10 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
                                         <ul>
-                                            <li key="Perempuan">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        field.onChange("Perempuan");
-                                                        setIsGenderOpen(false);
-                                                    }}
-                                                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
-                                                >
-                                                    Perempuan
-                                                </button>
-                                            </li>
-                                            <li key="Laki_laki">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        field.onChange("Laki_laki");
-                                                        setIsGenderOpen(false);
-                                                    }}
-                                                    className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
-                                                >
-                                                    Laki-laki
-                                                </button>
-                                            </li>
+                                            {["Perempuan", "Laki_laki"].map((option) => (
+                                                <li key={option}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            field.onChange(option === "Laki-laki" ? "Laki_laki" : option);
+                                                            setIsGenderOpen(false);
+                                                        }}
+                                                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50"
+                                                    >
+                                                        {option}
+                                                    </button>
+                                                </li>
+                                            ))}
                                         </ul>
                                     </div>
                                 )}
@@ -388,11 +421,13 @@ const RegisterForm = () => {
                     </Button>
                 </div>
             </form>
+
             <div className="flex items-center gap-4">
                 <div className="flex-grow border-t border-gray-200"></div>
                 <span className="text-sm text-gray-400">atau</span>
                 <div className="flex-grow border-t border-gray-200"></div>
             </div>
+
             <Button
                 variant="outline"
                 color="primary"
