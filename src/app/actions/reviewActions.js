@@ -1,7 +1,7 @@
 "use server";
 
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -21,7 +21,6 @@ export async function submitReview(prevState, formData) {
 
     const userId = parseInt(session.user.id, 10);
 
-    // 1. Validasi Input Zod
     const rawData = {
         rating: formData.get("rating"),
         comment: formData.get("comment"),
@@ -36,7 +35,6 @@ export async function submitReview(prevState, formData) {
     const { rating, comment, courseId } = validation.data;
 
     try {
-        // 2. Validasi Bisnis: Apakah sudah beli?
         const hasAccess = await prisma.order.findFirst({
             where: { user_id: userId, course_id: courseId, status: "completed" },
         });
@@ -44,8 +42,6 @@ export async function submitReview(prevState, formData) {
         if (!hasAccess) {
             return { success: false, message: "Anda harus membeli kursus ini untuk memberikan ulasan." };
         }
-
-        // 3. Validasi Bisnis: Apakah sudah pernah review?
         const existingReview = await prisma.review.findFirst({
             where: { user_id: userId, course_id: courseId },
         });
@@ -54,7 +50,6 @@ export async function submitReview(prevState, formData) {
             return { success: false, message: "Anda sudah memberikan ulasan untuk kursus ini." };
         }
 
-        // 4. Simpan ke Database
         await prisma.review.create({
             data: {
                 user_id: userId,
@@ -64,7 +59,6 @@ export async function submitReview(prevState, formData) {
             },
         });
 
-        // 5. Revalidate
         revalidatePath(`/courses/${courseId}`);
         return { success: true, message: "Ulasan berhasil dikirim!" };
 

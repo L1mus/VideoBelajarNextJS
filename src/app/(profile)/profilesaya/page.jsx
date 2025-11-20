@@ -1,7 +1,7 @@
 import React from "react";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { redirect } from "next/navigation"; // Masih dibutuhkan untuk edge case validasi ID
+import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import ProfileForm from "@/components/form/ProfileForm";
 
@@ -34,7 +34,6 @@ export default async function ProfileSayaPage() {
     const userId = parseInt(session?.user?.id, 10);
     if (isNaN(userId)) {
         console.error("Failed to parse user ID from session:", session?.user?.id);
-        // Redirect ke login dengan pesan error jika ID tidak valid
         redirect("/login?error=Invalid session");
     }
 
